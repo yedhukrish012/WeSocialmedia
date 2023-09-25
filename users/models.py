@@ -41,6 +41,8 @@ class Account(AbstractBaseUser):
         upload_to="profile/", null=True, blank=True, default="profile\images.jpeg"
     )
 
+    
+
     date_joined = models.DateTimeField(auto_now_add=True)
     last_login = models.DateTimeField(auto_now_add=True)
     is_admin = models.BooleanField(default=False)
