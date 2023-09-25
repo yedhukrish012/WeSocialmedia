@@ -1,6 +1,6 @@
 from datetime import timezone
 from django.db import models
-from  django.utils.timesince import timesince
+from django.utils.timesince import timesince
 from users.models import Account
 
 
@@ -10,7 +10,7 @@ class Post(models.Model):
     content = models.TextField(blank=True, null=True)
     img = models.ImageField(upload_to="posts/")
     likes = models.ManyToManyField(Account, related_name="liked_posts", blank=True)
-    reports = models.ManyToManyField(Account, related_name='reported_posts', blank=True)
+    reports = models.ManyToManyField(Account, related_name="reported_posts", blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -19,17 +19,15 @@ class Post(models.Model):
 
     def __str__(self):
         return self.author.username
-    
+
     def total_likes(self):
         return self.likes.count()
-    
+
     def created_time(self):
         return timesince(self.created_at)
-    
+
     def total_reports(self):
         return self.reports.count()
-    
-
 
 
 class Comment(models.Model):
@@ -38,10 +36,27 @@ class Comment(models.Model):
     content = models.TextField()
     created_at = models.DateTimeField(auto_now_add=True)
 
-
     def __str__(self):
         return f"Comment by {self.user.username} on {self.post}"
 
     def created_time(self):
         return timesince(self.created_at)
 
+
+class Follow(models.Model):
+    follower = models.ForeignKey(
+        Account, related_name="following", on_delete=models.CASCADE
+    )
+    following = models.ForeignKey(
+        Account, related_name="followers", on_delete=models.CASCADE
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return f"{self.follower.username} follows {self.following.username}"
+
+    def followers_count(self):
+        return self.followers.count()
+
+    def following_count(self):
+        return self.following.count()
