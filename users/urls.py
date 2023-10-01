@@ -8,6 +8,7 @@ from users.views import (
     BlockPost,
     BlockUnblockUserView,
     BlockedPostsList,
+    GetUserView,
     ListUsersView,
     MyPostListAPIView,
     ReportedPostsList,
@@ -26,6 +27,7 @@ urlpatterns = [
     path("register/", RegisterUser.as_view(), name="register"),
     path("users/me/", RetrieveUserView.as_view(), name="getRoutes"),
     path("update-profile-pic/", UpdateProfilePicView.as_view(), name="update-profile-pic"),
+    path('getusers/<int:id>/', GetUserView.as_view(), name='get_user'),
 
     path("listusers/", ListUsersView.as_view(), name="ListUsersView"),
     path("action/<int:user_id>/",BlockUnblockUserView.as_view(),name="block-unblock-user",),

@@ -91,6 +91,15 @@ class UpdateProfilePicView(APIView):
 
 
 
+
+class GetUserView(generics.RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    queryset = Account.objects.all()
+    serializer_class = AccountSerializer
+    lookup_field = 'id'  
+
+
 # -------------------------------------------------------------------------------Admin Views--------------------------------------------------------------------------#
 
 
