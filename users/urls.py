@@ -9,6 +9,7 @@ from users.views import (
     BlockUnblockUserView,
     BlockedPostsList,
     GetUserView,
+    JoiningMonthCountView,
     ListUsersView,
     MyPostListAPIView,
     ReportedPostsList,
@@ -38,4 +39,6 @@ urlpatterns = [
     path("blockedposts/", BlockedPostsList.as_view(), name="blockedpostslist"),
     path("listreportedposts/", ReportedPostsList.as_view(), name="reportedpostslist"),
     path("posts/", MyPostListAPIView.as_view(), name="post-list"),
+
+    path('joining-month-count/', JoiningMonthCountView.as_view(), name='joining-month-count'),
 ]

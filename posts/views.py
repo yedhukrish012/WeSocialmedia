@@ -1,12 +1,14 @@
 from rest_framework.response import Response
 from rest_framework import permissions, status, generics
-from posts.models import Comment, Follow, Post
+from chat.models import Message
+from posts.models import Comment, Follow, Notification, Post
 from rest_framework.views import APIView
 from rest_framework.generics import UpdateAPIView
 from posts.serializer import (
     CommentSerializer,
     FollowerSerializer,
     FollowingSerializer,
+    NotificationSerializer,
     PostSerializer,
 )
 from django.shortcuts import get_object_or_404
@@ -34,6 +36,7 @@ class CreatePostView(APIView):
             post = serializer.save(author=request.user)
             return Response(PostSerializer(post).data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 
 class UpdatePostView(generics.UpdateAPIView):
@@ -131,6 +134,12 @@ class LikePostView(APIView):
                 return Response("unliked post", status=status.HTTP_200_OK)
             else:
                 post.likes.add(request.user)
+                Notification.objects.create(
+                        from_user=request.user,
+                        to_user=post.author,
+                        post=post,
+                        notification_type=Notification.NOTIFICATION_TYPES[0][0],
+                    ) 
                 return Response("Liked Post", status=status.HTTP_200_OK)
 
         except Post.DoesNotExist:
@@ -169,6 +178,11 @@ class FollowUnfollowUserView(APIView):
         except Follow.DoesNotExist:
             follow_instance = Follow(follower=logged_in_user, following=user_to_follow)
             follow_instance.save()
+            Notification.objects.create(
+                        from_user=logged_in_user,
+                        to_user=user_to_follow,
+                        notification_type=Notification.NOTIFICATION_TYPES[2][0],
+                    ) 
             return Response(
                 {"detail": "You are now following this user."},
                 status=status.HTTP_201_CREATED,
@@ -182,10 +196,18 @@ class CreateComment(APIView):
     def post(self, request, id, *args, **kwargs):
         try:
             user = request.user
+            post = Post.objects.get(id=id)  # Assuming Post is the name of your model
             content = request.data["content"]
             serializer = self.serializer_class(data=request.data)
             if serializer.is_valid():
                 serializer.save(user=user, post_id=id, content=content)
+                
+                Notification.objects.create(
+                        from_user=user,
+                        to_user=post.author,
+                        post=post,
+                        notification_type=Notification.NOTIFICATION_TYPES[3][0],
+                    ) 
                 return Response({"comment Done"}, status=status.HTTP_201_CREATED)
             else:
                 return Response(
@@ -245,3 +267,97 @@ class FollowingListView(generics.ListAPIView):
         user_id = self.kwargs["id"]
         user = Account.objects.get(id=user_id)
         return Follow.objects.filter(follower=user)
+
+
+from rest_framework import generics
+from rest_framework import permissions
+from rest_framework.response import Response
+
+
+class ContactListvView(generics.RetrieveAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def retrieve(self, request, *args, **kwargs):
+        user = self.request.user
+        followers = user.followers.all()
+        following = user.following.all()
+        unique_user_ids = set()
+        response_data = []
+        
+        for follower in followers:
+            if follower.follower.id not in unique_user_ids and follower.follower != user:
+                follower_data = {
+                    "id": follower.follower.id,
+                    "username": follower.follower.username,
+                    "profile_pic": follower.follower.profile_pic.url
+                        if follower.follower.profile_pic else None,
+                    "last_login": follower.follower.last_login,
+                }
+                # Count unread messages for this follower
+                unread_message_count = Message.objects.filter(
+                    room__members=user, sender=follower.follower, is_seen=False
+                ).count()
+                follower_data["unseen_message_count"] = unread_message_count
+                response_data.append(follower_data)
+                unique_user_ids.add(follower.follower.id)
+        
+        for followed in following:
+            if followed.following.id not in unique_user_ids and followed.following != user:
+                following_data = {
+                    "id": followed.following.id,
+                    "username": followed.following.username,
+                    "profile_pic": followed.following.profile_pic.url
+                        if followed.following.profile_pic else None,
+                    "last_login": followed.following.last_login,
+                }
+                # Count unread messages for this followed user
+                unread_message_count = Message.objects.filter(
+                    room__members=user, sender=followed.following, is_seen=False
+                ).count()
+                following_data["unread_message_count"] = unread_message_count
+                response_data.append(following_data)
+                unique_user_ids.add(followed.following.id)
+
+        return Response(response_data)
+
+
+
+
+
+
+class NotificationsView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = NotificationSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        return (
+            Notification.objects.filter(to_user=user)
+            .exclude(is_seen=True)
+            .order_by("-created")
+        )
+
+    def get(self, request, *args, **kwargs):
+        try:
+            queryset = self.get_queryset()
+            serializer = self.get_serializer(queryset, many=True)
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(str(e), status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+
+class NotificationsSeenView(generics.ListAPIView):
+    permission_classes = [permissions.IsAuthenticated]
+    serializer_class = NotificationSerializer
+
+    def get_queryset(self):
+        return Notification.objects.all()  # Override the get_queryset method
+
+    def post(self, request, pk, *args, **kwargs):
+        try:
+            notification = Notification.objects.get(pk=pk)
+            notification.is_seen = True
+            notification.save()
+            return Response(status=status.HTTP_200_OK)
+        except Notification.DoesNotExist:
+            return Response("Not found in the database", status=status.HTTP_404_NOT_FOUND)

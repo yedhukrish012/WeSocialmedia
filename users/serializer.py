@@ -2,6 +2,7 @@ from rest_framework import serializers
 from .models import Account
 from django.contrib.auth.password_validation import validate_password
 from django.core import exceptions
+from datetime import datetime
 
 
 class AccountCreateSerializer(serializers.ModelSerializer):
@@ -63,3 +64,13 @@ class ProfilePictureUpdateSerializer(serializers.ModelSerializer):
     class Meta:
         model = Account
         fields = ['profile_pic']
+
+
+class JoiningMonthCountSerializer(serializers.Serializer):
+    joining_month = serializers.SerializerMethodField()
+    user_count = serializers.IntegerField()
+    
+    def get_joining_month(self, obj):
+        month_number = obj['joining_month']
+        current_year = datetime.now().year  # Get the current year dynamically
+        return datetime(current_year, month_number, 1).strftime('%b %Y')

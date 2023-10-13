@@ -9,10 +9,14 @@ from rest_framework import permissions, status
 from posts.models import Post
 from posts.serializer import PostSerializer
 from users.models import Account
+from django.db.models.functions import ExtractMonth
+from django.db.models import Count
+from django.db.models.functions import ExtractMonth, ExtractYear
 
 from users.serializer import (
     AccountCreateSerializer,
     AccountSerializer,
+    JoiningMonthCountSerializer,
     ProfilePictureUpdateSerializer,
 )
 
@@ -195,3 +199,22 @@ class ReportedPostsList(generics.ListAPIView):
         .order_by("-created_at")
     )
     serializer_class = PostSerializer
+
+
+
+
+class JoiningMonthCountView(APIView):
+    
+    def get(self, request):
+        user_counts = (
+            Account.objects.annotate(
+                joining_month=ExtractMonth('date_joined'),
+                joining_year=ExtractYear('date_joined')
+            )
+            .values('joining_month', 'joining_year')
+            .annotate(user_count=Count('id'))
+            .order_by('joining_year', 'joining_month')
+        )
+        serializer = JoiningMonthCountSerializer(user_counts, many=True)
+
+        return Response(serializer.data)

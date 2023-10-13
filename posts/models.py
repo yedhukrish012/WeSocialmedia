@@ -60,3 +60,27 @@ class Follow(models.Model):
 
     def following_count(self):
         return self.following.count()
+
+
+
+
+class Notification(models.Model):
+   NOTIFICATION_TYPES = [
+        ('like', 'New Like'),
+        ('post', 'New Post'),
+        ('follow', 'New Follow'),
+        ('comment', 'New Comment'),
+        ('blocked', 'Post Blocked'),
+        ('unblocked', 'Post Unblocked'),
+    ]
+   
+   from_user = models.ForeignKey(Account, related_name="notification_from", on_delete=models.CASCADE, null=True)
+   to_user = models.ForeignKey(Account, related_name="notification_to", on_delete=models.CASCADE, null=True)
+   notification_type = models.CharField(choices=NOTIFICATION_TYPES, max_length=20)
+   post  = models.ForeignKey('Post', on_delete=models.CASCADE, related_name='+', blank=True, null=True)
+   comment  = models.ForeignKey('Comment', on_delete=models.CASCADE, related_name='+', blank=True, null=True)
+   created = models.DateTimeField(auto_now_add=True)
+   is_seen = models.BooleanField(default=False)
+   
+   def __str__(self):
+        return f"{self.from_user} sent a {self.notification_type} notification to {self.to_user}"

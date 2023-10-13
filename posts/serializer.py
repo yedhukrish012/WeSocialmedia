@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from users.models import Account
-from .models import Comment, Follow, Post
+from .models import Comment, Follow, Notification, Post
 
 
 #-------------------------------------------------------------------------------------Account Settings----------------------------------------------#
@@ -143,7 +143,19 @@ class FollowingSerializer(serializers.ModelSerializer):
 
 
 
+class NotificationSerializer(serializers.ModelSerializer):
+    from_user = AccountSerializer(read_only=True)
 
+    class Meta:
+        model = Notification
+        fields = '__all__'
+        read_only_fields = ('notification_type',)
+
+    def validate_notification_type(self, value):
+        choices = dict(Notification.NOTIFICATION_TYPES)
+        if value not in choices:
+            raise serializers.ValidationError("Invalid notification type.")
+        return value
 
 
 
