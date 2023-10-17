@@ -1,4 +1,8 @@
 import os
+import django
+
+os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'socialmedia.settings')
+django.setup()
 
 from django_channels_jwt_auth_middleware.auth import JWTAuthMiddlewareStack
 from .channelsmiddleware import JwtAuthMiddleware
@@ -8,7 +12,7 @@ from channels.security.websocket import AllowedHostsOriginValidator
 
 from chat import routing
 
-os.environ.setdefault('DJANGO_SETTINGS_MODULE', 'socialmedia.settings')
+
 
 from posts import routing as postrouting
 

@@ -177,7 +177,11 @@ USE_TZ = True
 STATIC_URL = 'static/'
 MEDIA_URL = 'image/'
 MEDIA_ROOT = 'static/img/'
+import os
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticn/')
 
+# MEDIA_ROOT =  os.path.join(BASE_DIR, 'media')
+# MEDIA_URL = 'media/'
 
 CHANNEL_LAYERS = {
     'default': {
